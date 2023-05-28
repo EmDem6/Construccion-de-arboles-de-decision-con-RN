@@ -1,0 +1,10 @@
+positive, negative.
+ClumpThickness: continuous.
+CellSize: continuous.
+CellShape: continuous.
+MarginalAdhesion: continuous.
+EpithelialSize: continuous.
+BareNuclei: continuous.
+BlandChromatin: continuous.
+NormalNucleoli: continuous.
+Mitoses: continuous.
