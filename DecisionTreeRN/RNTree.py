@@ -6,6 +6,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.datasets import load_wine
 import numpy as np
 
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+
 #Cargamos Dataset:
 
 dataset = load_iris()
@@ -79,7 +82,7 @@ def treeNet(X, y, epoch, nc, nv, l, sc, depth = 3):
             if epoch % 100 == 0:
                 print(f"Epoch {epoch}: Loss={loss.item():.4f}")
         if loss.item() < mejorLoss:
-            tree["Variable"], tree["Loss"], tree["Net"] = i, loss.item(), net
+            tree["Variable"], tree["Loss"] = i, loss.item()
             mejorVar = i
             mejorNet = net
             mejorLoss = loss.item()
@@ -120,5 +123,66 @@ def treeNet(X, y, epoch, nc, nv, l, sc, depth = 3):
                         depth-1))
     return tree
 
+def find_index_to_insert(arr, new_int):
+    left = 0
+    right = len(arr) - 1
+
+    while left <= right:
+        mid = (left + right) // 2
+
+        if new_int < arr[mid]:
+            right = mid - 1
+        elif new_int > arr[mid]:
+            left = mid + 1
+        else:
+            return mid
+
+    return left
+def predictor(X, tree):
+
+    if isinstance(tree, np.int64):
+        return tree
+    else:
+        var = tree["Variable"]
+        xaux = X[:,var:var + 1]
+        xaux = xaux[(0,0)]
+
+        ind = find_index_to_insert(tree['Cutpoints'], xaux)
+
+        pre = tree["Valores"][ind]
+
+        return predictor(X, tree["Hijos"][pre])
+
 
 tree = treeNet(X_train,y_train, epoch, num_classes, num_features, len(y_train),stop_condition, depth)
+
+cont = 0
+results = []
+for i in range(len(y_test)):
+    # print(predictor(X_test[i].reshape(1,13),tree))
+    if predictor(X_test[i].reshape(1, num_features), tree) == y_test[i]:
+        cont += 1
+    results.append(predictor(X_test[i].reshape(1,num_features),tree))
+
+print(cont/len(y_test))
+
+results_array = np.array(results)
+
+y_pred = results_array
+y_true = y_test
+
+conM = confusion_matrix(y_true, y_pred)
+
+# tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+
+accuracy = accuracy_score(y_true, y_pred)
+precision = precision_score(y_true, y_pred, average=None)
+recall = recall_score(y_true, y_pred, average=None)
+f1 = f1_score(y_true, y_pred, average=None)
+
+print("matriz de confusión: ")
+print(conM)
+print("Accuracy: ",accuracy)
+print("precision: ", precision)
+print("recall: ",recall)
+print("f1-score: ",f1)
