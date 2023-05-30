@@ -78,3 +78,19 @@ plt.title('Learned Decision Boundary')
 plt.show()
 
 print(accuracy_score(predicted,y_test))
+
+#Crear una serie de puntos uniformemente distribuidos.
+X = np.linspace(y_min, y_max, 4000).reshape(4000,1)
+
+#Calcular en que momento cambia la predicción. Ese sería el cutpoint.
+y_pred = net(torch.tensor(X, dtype=torch.float32)).argmax(axis=1).numpy()
+c = y_pred[0]
+Cutpoints = []
+Valores = [c]
+for i, prediccion in enumerate(y_pred):
+    if prediccion != c:
+        c = prediccion
+        Cutpoints.append(X[i].item())
+        Valores.append(c)
+
+print("Cutpoints: ", Cutpoints)
