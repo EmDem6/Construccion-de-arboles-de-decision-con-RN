@@ -22,26 +22,12 @@ n_features = 4
 n_classes = 3
 # n_classes = 2
 
-
 # separar los datos en características y etiquetas
 X = iris.data
 y = iris.target
 
 # dividir los datos en conjuntos de entrenamiento y prueba
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1)
-
-# crear un modelo SVM con kernel lineal
-model = SVC(kernel='linear')
-
-# ajustar el modelo usando los datos de entrenamiento
-model.fit(X_train, y_train)
-
-# hacer predicciones en los datos de prueba
-y_pred = model.predict(X_test)
-
-# evaluar la precisión del modelo
-accuracy = accuracy_score(y_test, y_pred)
-print("Precisión del modelo SVM: {:.2f}%".format(accuracy*100))
 
 def treeSVM(X, y, nc, nv, depth = 3):
 
@@ -68,9 +54,25 @@ def treeSVM(X, y, nc, nv, depth = 3):
 
 
     tree = {
-        "Variable": mejorV, "Accuracy": mejorAcc, "Model": mejorModelo,
+        "Variable": mejorV, "Accuracy": mejorAcc,
         "data": X, "target": y
     }
+
+    x_values = np.linspace(X.min() - 1, X.max() + 1, 2000).reshape(-1, 1)
+
+    y_pred = mejorModelo.predict(x_values)
+
+    c = y_pred[0]
+    Cutpoints = []
+    Valores = [c]
+    for i, prediccion in enumerate(y_pred):
+        if prediccion != c:
+            c = prediccion
+            Cutpoints.append(x_values[i].item())
+            Valores.append(c)
+
+    tree["Cutpoints"] = Cutpoints
+    tree["Valores"] = Valores
 
     y_pred = mejorModelo.predict(X[:,mejorV: mejorV + 1])
 
@@ -98,22 +100,37 @@ def treeSVM(X, y, nc, nv, depth = 3):
 
     return tree
 
-tree = treeSVM(X_train, y_train, n_classes, n_features, 12)
+def find_index_to_insert(arr, new_int):
+    left = 0
+    right = len(arr) - 1
 
+    while left <= right:
+        mid = (left + right) // 2
 
+        if new_int < arr[mid]:
+            right = mid - 1
+        elif new_int > arr[mid]:
+            left = mid + 1
+        else:
+            return mid
 
+    return left
 def predictor(X, tree):
 
     if isinstance(tree, np.int64):
         return tree
     else:
-        model = tree["Model"]
         var = tree["Variable"]
         xaux = X[:,var:var + 1]
-        pre = model.predict(xaux)
+        xaux = xaux[(0,0)]
 
-        return predictor(X, tree["Hijos"][pre.item()])
+        ind = find_index_to_insert(tree['Cutpoints'], xaux)
 
+        pre = tree["Valores"][ind]
+
+        return predictor(X, tree["Hijos"][pre])
+
+tree = treeSVM(X_train, y_train, n_classes, n_features, 12)
 
 cont = 0
 results = []
