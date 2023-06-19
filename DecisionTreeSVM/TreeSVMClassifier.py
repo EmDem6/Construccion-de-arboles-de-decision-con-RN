@@ -1,20 +1,17 @@
 from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
 
 import numpy as np
 
-import torch
-import torch.nn as nn
-import torch.optim as optim
 
-class TreeNetClassifier(BaseEstimator, ClassifierMixin):
+class TreeSVMClassifier(BaseEstimator, ClassifierMixin):
 
-    def __init__(self, num_features, num_classes, epoch, depth, stop_condition):
+    def __init__(self, num_features, num_classes, depth):
         # Initialize your model with any required parameters
         self.num_features = num_features
         self.num_classes = num_classes
-        self.epoch = epoch
         self.depth = depth
-        self.stop_condition = stop_condition
         self.root = None
 
         self.n_nodos = None
@@ -30,8 +27,8 @@ class TreeNetClassifier(BaseEstimator, ClassifierMixin):
         # y: array-like, shape (n_samples,)
         # This method should update the model's internal state based on the training data
 
-        self.root = self.tree_net(X, y, self.epoch, self.num_classes, self.num_features, len(y), self.stop_condition,
-                                  self.depth)
+        self.root = self.tree_SVM(X, y, self.num_classes, self.num_features, self.depth)
+
 
         self.n_nodos = self.num_nodos(self.root)
         self.n_hojas = self.num_hojas(self.root)
@@ -40,57 +37,37 @@ class TreeNetClassifier(BaseEstimator, ClassifierMixin):
 
         return self
 
-    def tree_net(self, X, y, epoch, nc, nv, l, sc, depth):
-
-        class Net(nn.Module):
-            def __init__(self):
-                super(Net, self).__init__()
-                self.fc = nn.Linear(1, nc)
-
-            def forward(self, x):
-                x = self.fc(x)
-                return x
+    def tree_SVM(self, X, y, nc, nv, depth=3):
 
         if depth == 0:
             return np.bincount(y).argmax()
 
-        mejorLoss = float("Inf")
-        mejorNet = Net()
-        mejorVar = 0
+        mejorV = 0
+        mejorAcc = 0
+        mejorModelo = SVC(kernel='linear')
 
-        tree = {"Variable": 0, "Loss": float("Inf"), "data": X, "target": y}
+        for variable in range(nv):
 
-        for i in range(nv):
-            Xaux = X[:, i:i + 1]
+            model = SVC(kernel='linear')
+            model.fit(X[:, variable: variable + 1], y)
+            y_pred = model.predict(X[:, variable: variable + 1])
 
-            net = Net()
-            criterion = nn.CrossEntropyLoss()
-            optimizer = optim.Adam(net.parameters())
+            accuracy = accuracy_score(y, y_pred)
+            print("Precisión del modelo SVM: {:.2f}%".format(accuracy * 100))
 
-            lossAux = float("Inf")
-            for _ in range(epoch * int(l / len(y))):
-                optimizer.zero_grad()
-                outputs = net(torch.tensor(Xaux, dtype=torch.float32))
-                loss = criterion(outputs, torch.tensor(y, dtype=torch.long))
-                loss.backward()
-                optimizer.step()
+            if accuracy > mejorAcc:
+                mejorV = variable
+                mejorAcc = accuracy
+                mejorModelo = model
 
-                if abs(loss.item() - lossAux) < sc:
-                    break
-                lossAux = loss.item()
-
-                if _ % 100 == 0:
-                    print(f"Epoch {_}: Loss={loss.item():.4f}")
-
-            if loss.item() < mejorLoss:
-                tree["Variable"], tree["Loss"] = i, loss.item()
-                mejorVar = i
-                mejorNet = net
-                mejorLoss = loss.item()
+        tree = {
+            "Variable": mejorV, "Accuracy": mejorAcc,
+            "data": X, "target": y
+        }
 
         x_values = np.linspace(X.min() - 1, X.max() + 1, 2000).reshape(-1, 1)
 
-        y_pred = mejorNet(torch.tensor(x_values, dtype=torch.float32)).argmax(axis=1).numpy()
+        y_pred = mejorModelo.predict(x_values)
 
         c = y_pred[0]
         Cutpoints = []
@@ -104,14 +81,20 @@ class TreeNetClassifier(BaseEstimator, ClassifierMixin):
         tree["Cutpoints"] = Cutpoints
         tree["Valores"] = Valores
 
+        y_pred = mejorModelo.predict(X[:, mejorV: mejorV + 1])
+
         pobx = {}
         poby = {}
-        for i in enumerate(X[:, mejorVar:mejorVar + 1]):
-            pre = mejorNet(torch.tensor(i[1], dtype=torch.float32)).argmax().item()
+
+        for i in enumerate(y_pred):
+            pre = i[1]
             if pre not in poby:
                 pobx[pre], poby[pre] = [], []
             pobx[pre].append(X[i[0]])
             poby[pre].append(y[i[0]])
+
+        tree["pobx"] = pobx
+        tree["poby"] = poby
 
         num_hijos = len(poby)
         tree["Hijos"] = {}
@@ -119,8 +102,8 @@ class TreeNetClassifier(BaseEstimator, ClassifierMixin):
             if len(np.unique(np.array(value))) == 1 or num_hijos == 1:
                 tree["Hijos"][key] = np.bincount(value).argmax()
             else:
-                tree["Hijos"][key] = self.tree_net(
-                    np.array(pobx[key]).reshape((len(pobx[key]), nv)), np.array(value), epoch, nc, nv, l, sc, depth - 1)
+                tree["Hijos"][key] = self.tree_SVM(np.array(pobx[key]).reshape((len(pobx[key]), nv)), np.array(value), nc, nv,
+                                             depth - 1)
 
         return tree
 
