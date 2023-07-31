@@ -1,4 +1,3 @@
-from sklearn.base import BaseEstimator, ClassifierMixin
 
 import numpy as np
 
@@ -6,7 +5,16 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-class TreeNetClassifier(BaseEstimator, ClassifierMixin):
+
+class Net(nn.Module):
+    def __init__(self, num_classes):
+        super(Net, self).__init__()
+        self.fc = nn.Linear(1, num_classes)
+
+    def forward(self, x):
+        x = self.fc(x)
+        return x
+class TreeNetClassifier():
 
     def __init__(self, num_features, num_classes, epoch, depth, stop_condition):
         # Initialize your model with any required parameters
@@ -22,13 +30,8 @@ class TreeNetClassifier(BaseEstimator, ClassifierMixin):
         self.profundidad = None
         self.longitudMediaRamas = None
 
-        # Initialize any other variables or attributes needed by your model
 
     def fit(self, X, y):
-        # Implement the training logic for your model
-        # X: array-like, shape (n_samples, n_features)
-        # y: array-like, shape (n_samples,)
-        # This method should update the model's internal state based on the training data
 
         self.root = self.tree_net(X, y, self.epoch, self.num_classes, self.num_features, len(y), self.stop_condition,
                                   self.depth)
@@ -40,42 +43,33 @@ class TreeNetClassifier(BaseEstimator, ClassifierMixin):
 
         return self
 
-    def tree_net(self, X, y, epoch, nc, nv, l, sc, depth):
-
-        class Net(nn.Module):
-            def __init__(self):
-                super(Net, self).__init__()
-                self.fc = nn.Linear(1, nc)
-
-            def forward(self, x):
-                x = self.fc(x)
-                return x
+    def tree_net(self, X, y, epoch, num_classes, num_variables, longitud_inicial, stop_condition, depth):
 
         if depth == 0:
             return np.bincount(y).argmax()
 
         mejorLoss = float("Inf")
-        mejorNet = Net()
+        mejorNet = Net(num_classes)
         mejorVar = 0
 
         tree = {"Variable": 0, "Loss": float("Inf"), "data": X, "target": y}
 
-        for i in range(nv):
+        for i in range(num_variables):
             Xaux = X[:, i:i + 1]
 
-            net = Net()
+            net = Net(num_classes)
             criterion = nn.CrossEntropyLoss()
             optimizer = optim.Adam(net.parameters())
 
             lossAux = float("Inf")
-            for _ in range(epoch * int(l / len(y))):
+            for _ in range(epoch * int(longitud_inicial / len(y))):
                 optimizer.zero_grad()
                 outputs = net(torch.tensor(Xaux, dtype=torch.float32))
                 loss = criterion(outputs, torch.tensor(y, dtype=torch.long))
                 loss.backward()
                 optimizer.step()
 
-                if abs(loss.item() - lossAux) < sc:
+                if abs(loss.item() - lossAux) < stop_condition:
                     break
                 lossAux = loss.item()
 
@@ -120,14 +114,11 @@ class TreeNetClassifier(BaseEstimator, ClassifierMixin):
                 tree["Hijos"][key] = np.bincount(value).argmax()
             else:
                 tree["Hijos"][key] = self.tree_net(
-                    np.array(pobx[key]).reshape((len(pobx[key]), nv)), np.array(value), epoch, nc, nv, l, sc, depth - 1)
+                    np.array(pobx[key]).reshape((len(pobx[key]), num_variables)), np.array(value), epoch, num_classes, num_variables, longitud_inicial, stop_condition, depth - 1)
 
         return tree
 
     def predict(self, X):
-        # Implement the prediction logic for your model
-        # X: array-like, shape (n_samples, n_features)
-        # This method should return the predicted labels for the input samples
 
         predictions = []
         for sample in X:
