@@ -1,11 +1,10 @@
-from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 
 import numpy as np
 
 
-class TreeSVMClassifier(BaseEstimator, ClassifierMixin):
+class TreeSVMClassifier():
 
     def __init__(self, num_features, num_classes, depth):
         # Initialize your model with any required parameters
@@ -37,7 +36,7 @@ class TreeSVMClassifier(BaseEstimator, ClassifierMixin):
 
         return self
 
-    def tree_SVM(self, X, y, nc, nv, depth=3):
+    def tree_SVM(self, X, y, num_classes, num_variables, depth=3):
 
         if depth == 0:
             return np.bincount(y).argmax()
@@ -46,7 +45,7 @@ class TreeSVMClassifier(BaseEstimator, ClassifierMixin):
         mejorAcc = 0
         mejorModelo = SVC(kernel='linear')
 
-        for variable in range(nv):
+        for variable in range(num_variables):
 
             model = SVC(kernel='linear')
             model.fit(X[:, variable: variable + 1], y)
@@ -102,7 +101,7 @@ class TreeSVMClassifier(BaseEstimator, ClassifierMixin):
             if len(np.unique(np.array(value))) == 1 or num_hijos == 1:
                 tree["Hijos"][key] = np.bincount(value).argmax()
             else:
-                tree["Hijos"][key] = self.tree_SVM(np.array(pobx[key]).reshape((len(pobx[key]), nv)), np.array(value), nc, nv,
+                tree["Hijos"][key] = self.tree_SVM(np.array(pobx[key]).reshape((len(pobx[key]), num_variables)), np.array(value), num_classes, num_variables,
                                              depth - 1)
 
         return tree
@@ -131,7 +130,10 @@ class TreeSVMClassifier(BaseEstimator, ClassifierMixin):
 
             pre = node["Valores"][ind]
 
-            return self.traverse_tree(X, node["Hijos"][pre])
+            try:
+                return self.traverse_tree(X, node["Hijos"][pre])
+            except:
+                return pre
 
     def find_index_to_insert(self, arr, new_int):
         left = 0

@@ -26,20 +26,20 @@ from DecisionTreeRN import TreeNetClassifier
 from sklearn.preprocessing import LabelEncoder
 
 # Load the dataset
-dataset = load_iris()
+dataset = load_wine()
 
 # Split the dataset into features (X) and labels (y)
 X = dataset.data
 y = dataset.target
 
 
-# url = '../../Datasets/CancerData/Cancer_Data.csv'
-# data_df = pd.read_csv(url, skiprows=1,header=None)
-# X = data_df.values[:,2:].astype('float') # Exclude the last column as the target variable
-# y = data_df.values[:,1]
-# label_encoder = LabelEncoder()
-# label_encoder.fit(y)
-# y = label_encoder.transform(y)
+url = '../../Datasets/CancerData/Cancer_Data.csv'
+data_df = pd.read_csv(url, skiprows=1,header=None)
+X = data_df.values[:,2:].astype('float') # Exclude the last column as the target variable
+y = data_df.values[:,1]
+label_encoder = LabelEncoder()
+label_encoder.fit(y)
+y = label_encoder.transform(y)
 
 
 # url = '../../Datasets/LetterRecognition/letter-recognition.data'
@@ -48,7 +48,7 @@ y = dataset.target
 #
 # X = data_df.values[:,1:-1].astype('float')  # Exclude the last column as the target variable
 # y = data_df.values[:,0]
-#
+# #
 # from sklearn.preprocessing import LabelEncoder
 # label_encoder = LabelEncoder()
 #
@@ -79,7 +79,7 @@ y = dataset.target
 #
 # X = data_df.values[:, :-1]  # Exclude the last column as the target variable
 # y = data_df.values[:, -1]
-#
+# #
 # from sklearn.preprocessing import LabelEncoder
 # label_encoder = LabelEncoder()
 #
@@ -111,7 +111,7 @@ y = dataset.target
 # y = data_df.values[:, -1]   # Use the last column as the target variable
 # y.astype('int')
 
-import pandas as pd
+
 
 # # Read the .data file as a CSV
 # data_df = pd.read_csv('../../Datasets/CarEvaluation/car.data', header=None)
@@ -157,10 +157,10 @@ import pandas as pd
 # X = data_df.values[:,0:-1]
 # y = data_df.values[:,-1]
 #
-# # y = np.where(y == 1, 0, 1)
+# y = np.where(y == 1, 0, 1)
 
 # Perform feature selection using mutual information
-selector = SelectKBest(score_func=mutual_info_classif, k=4)  # Select top 10 features
+selector = SelectKBest(score_func=mutual_info_classif, k='all')  # Select top 10 features
 X_selected = selector.fit_transform(X, y)
 
 # Get the indices of the selected features

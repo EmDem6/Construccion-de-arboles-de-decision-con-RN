@@ -29,7 +29,7 @@ net = Net()
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(net.parameters())
 
-for epoch in range(100000):
+for epoch in range(10000):
     optimizer.zero_grad()
     outputs = net(torch.tensor(X_train[:,1:2], dtype=torch.float32))
     loss = criterion(outputs, torch.tensor(y_train, dtype=torch.long))
@@ -47,7 +47,7 @@ with torch.no_grad():
     predicted = torch.argmax(test_outputs, dim=1).numpy()
 
 # Plot the data points
-plt.scatter(X_test[:, 0], X_test[:, 1], c=y_test, cmap='viridis')
+plt.scatter(X_test[:, 0], X_test[:, 1], c=y_test, cmap='viridis', edgecolor='k')
 
 # Create a meshgrid of points
 x_min, x_max = X_test[:, 0].min() - 0.1, X_test[:, 0].max() + 0.1
@@ -67,12 +67,12 @@ with torch.no_grad():
 grid_predicted = grid_predicted.reshape(xx.shape)
 
 # Plot the decision boundary
-plt.contourf(xx, yy, grid_predicted, alpha=0.5, cmap='viridis')
+plt.contourf(xx, yy, grid_predicted, alpha=0.8, cmap='viridis')
 
 # Set the labels and title
-plt.xlabel('Feature 3')
-plt.ylabel('Feature 4')
-plt.title('Learned Decision Boundary')
+plt.xlabel('Variable 3')
+plt.ylabel('Variable 4')
+plt.title('Fronteras de decisión aprendidas')
 
 # Show the plot
 plt.show()
@@ -94,3 +94,20 @@ for i, prediccion in enumerate(y_pred):
         Valores.append(c)
 
 print("Cutpoints: ", Cutpoints)
+
+
+# Crear una serie de puntos uniformemente distribuidos.
+X = np.linspace(y_min, y_max, 4000).reshape(4000,1)
+
+# Calcular la predicción de la red neuronal para cada punto.
+y_pred = net(torch.tensor(X, dtype=torch.float32)).argmax(axis=1).numpy()
+
+# Crear el gráfico.
+plt.figure(figsize=(10, 6))
+plt.plot(X, y_pred)
+plt.xlabel('Variable utilizada para predecir')
+plt.ylabel('Predicción de la red neuronal')
+plt.title('Predicción de la red neuronal en función de la variable de entrada')
+plt.show()
+
+

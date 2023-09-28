@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from sklearn.datasets import load_iris
+from sklearn.datasets import load_breast_cancer
+
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import load_wine
 import numpy as np
@@ -11,7 +13,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 
 #Cargamos Dataset:
 
-dataset = load_iris()
+dataset = load_breast_cancer()
 
 X_train, X_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=0.2)
 
